@@ -1,34 +1,8 @@
-coins.py — Refactored with Fallback Support
+import requests import json
 
-import pandas as pd from utils.fallback_request import try_sources
+def fetch_top_tokens(limit=100): url = f"https://api.coingecko.com/api/v3/coins/markets" params = { 'vs_currency': 'usd', 'order': 'volume_desc', 'per_page': limit, 'page': 1, 'sparkline': False } try: response = requests.get(url, params=params) response.raise_for_status() return response.json() except Exception as e: print(f"[ERROR] Failed to fetch top tokens: {e}") return []
 
-def fetch_top_coins(limit=100): """ Fetch top coins by market cap using multiple fallback APIs. """ url_sources = [ "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100&convert=USD" ]
+def format_token_data(token): return { 'id': token.get('id'), 'symbol': token.get('symbol').upper(), 'name': token.get('name'), 'price': f"${token.get('current_price'):,.4f}", 'volume': token.get('total_volume'), 'image': token.get('image') }
 
-data = try_sources(url_sources)
-if not data:
-    return pd.DataFrame()
-
-# Handle CoinGecko format
-if isinstance(data, list) and 'id' in data[0]:
-    df = pd.DataFrame(data)
-    df["volume_ratio"] = df["total_volume"] / (df["market_cap"] / 100)
-    return df[["id", "symbol", "name", "current_price", "market_cap", "total_volume", "volume_ratio"]]
-
-# Handle CoinMarketCap format
-elif isinstance(data, dict) and 'data' in data:
-    parsed = []
-    for token in data['data']:
-        parsed.append({
-            "id": token["slug"],
-            "symbol": token["symbol"].lower(),
-            "name": token["name"],
-            "current_price": token["quote"]["USD"]["price"],
-            "market_cap": token["quote"]["USD"]["market_cap"],
-            "total_volume": token["quote"]["USD"]["volume_24h"],
-        })
-    df = pd.DataFrame(parsed)
-    df["volume_ratio"] = df["total_volume"] / (df["market_cap"] / 100)
-    return df[["id", "symbol", "name", "current_price", "market_cap", "total_volume", "volume_ratio"]]
-
-return pd.DataFrame()
+def get_tokens(limit=100): raw_tokens = fetch_top_tokens(limit) return [format_token_data(t) for t in raw_tokens if t.get('id') and t.get('symbol') and t.get('name')]
 

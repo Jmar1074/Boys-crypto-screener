@@ -1,27 +1,32 @@
 import streamlit as st
-from data_fetch.coins import get_token_list
-from state.star_state import get_starred_tokens
+from data_fetch.coins import get_market_movers
+from state.star_state import toggle_watchlist, is_starred
 
-def show_watchlist():
-    tokens = get_token_list()
-    watchlist = get_starred_tokens()
+def render_watchlist(watchlist):
+    st.subheader("📌 Watchlist")
 
-    if not watchlist:
-        st.info("⭐ Your watchlist is currently empty.")
+    all_coins = get_market_movers()
+    tracked = [coin for coin in all_coins if coin.get("symbol", "").upper() in watchlist]
+
+    if not tracked:
+        st.info("Your watchlist is empty.")
         return
 
-    st.markdown("<h3 style='margin-bottom: 10px;'>📌 Watchlist</h3>", unsafe_allow_html=True)
+    for coin in tracked:
+        symbol = coin.get("symbol", "").upper()
+        name = coin.get("name", "")
+        price = coin.get("price", 0)
+        volume_ratio = coin.get("volume_change_ratio", "N/A")
 
-    for token in tokens:
-        symbol = token.get("symbol", "")
-        if symbol not in watchlist:
-            continue
+        is_saved = is_starred(symbol)
+        star = "⭐" if is_saved else "☆"
 
-        name = token.get("name", "")
-        price = token.get("price", 0)
-        volume = token.get("volume", 0)
+        cols = st.columns([2, 5, 3, 2, 1])
+        cols[0].markdown(f"**{symbol}**")
+        cols[1].markdown(name)
+        cols[2].markdown(f"${price:,.4f}")
+        cols[3].markdown(f"Vol Ratio: {volume_ratio}")
 
-        cols = st.columns([0.4, 0.3, 0.3])
-        cols[0].markdown(f"<div style='font-weight:600; font-size:17px;'>{symbol} — {name}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div style='font-size:16px;'>${price:,.4f}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div style='font-size:16px;'>Vol: {volume:,.2f}</div>", unsafe_allow_html=True)
+        if cols[4].button(star, key=f"watch_star_{symbol}"):
+            toggle_watchlist(symbol)
+            st.experimental_rerun()

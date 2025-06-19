@@ -2,11 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime
-import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.graph_objects as go
-
-nltk.download("vader_lexicon")
 
 st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")
 st.title("🧠 The Boys Crypto Screener")
@@ -28,20 +24,6 @@ def get_top_coins():
     }
     r = requests.get(url, params=params)
     return pd.DataFrame(r.json())
-
-@st.cache_data(ttl=600)
-def get_token_reddit_sentiment(name):
-    try:
-        r = requests.get(f"https://api.pushshift.io/reddit/search/comment/?q={name}&size=20")
-        if r.status_code == 200:
-            comments = [i['body'] for i in r.json().get('data', [])]
-            analyzer = SentimentIntensityAnalyzer()
-            scores = [analyzer.polarity_scores(text)["compound"] for text in comments]
-            avg_sentiment = round(sum(scores) / len(scores), 3) if scores else 0
-            return avg_sentiment, comments[:3]
-    except:
-        return 0, []
-    return 0, []
 
 @st.cache_data(ttl=300)
 def get_candle_data(symbol="bitcoin"):
@@ -101,11 +83,6 @@ with st.expander("🔎 Token Deep Dive"):
         st.write("🔄 **24h Volume:** $", info_data['market_data']['total_volume']['usd'])
         st.write("📦 **Circulating Supply:**", info_data['market_data']['circulating_supply'])
         st.write("📦 **Total Supply:**", info_data['market_data']['total_supply'])
-
-        sentiment_score, comments = get_token_reddit_sentiment(info_data['name'])
-        st.write(f"💬 **Reddit Sentiment Score:** {sentiment_score}")
-        for c in comments:
-            st.caption(f"🗣️ {c[:100]}...")
 
         chart_df = get_candle_data(token_choice)
         if not chart_df.empty:

@@ -83,3 +83,4 @@ with st.expander("🔍 Token Deep Dive"):
 
         st.write("**Description:**")
         st.markdown(info_data['description']['en'][:600] + "...")
+

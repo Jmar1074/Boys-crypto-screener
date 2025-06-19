@@ -3,18 +3,13 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-# App config
 st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")
-st.title("🧠 The Boys Crypto Screener")
 
-# Session state for starred tokens
+# Initialize starred list
 if "starred" not in st.session_state:
     st.session_state.starred = []
 
-# Constants
-MIN_MARKET_CAP = 500_000
-
-# Cached API call for top coins
+# Load top coins from CoinGecko
 @st.cache_data(ttl=60)
 def get_top_coins():
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -28,7 +23,7 @@ def get_top_coins():
     r = requests.get(url, params=params)
     return pd.DataFrame(r.json())
 
-# Get chart data
+# Load chart data for token
 @st.cache_data(ttl=300)
 def get_candle_data(symbol="bitcoin"):
     url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
@@ -42,9 +37,9 @@ def get_candle_data(symbol="bitcoin"):
         return df
     return pd.DataFrame()
 
-# Screen coins based on volume ratio and market cap
+# Screen coins by market cap and add volume ratio
 def screen_coins(df):
-    df = df[df["market_cap"] >= MIN_MARKET_CAP]
+    df = df[df["market_cap"] >= 500_000]
     df["volume_ratio"] = df["total_volume"] / (df["market_cap"] / 100)
     df = df.sort_values("market_cap", ascending=False)
     return df[["id", "symbol", "name", "current_price", "market_cap", "total_volume", "volume_ratio"]]
@@ -53,50 +48,55 @@ def screen_coins(df):
 df_coins = get_top_coins()
 filtered_df = screen_coins(df_coins)
 
-# Starred token display
-st.subheader("⭐ Starred Tokens")
-if st.session_state.starred:
-    starred_df = filtered_df[filtered_df["id"].isin(st.session_state.starred)]
-    st.dataframe(starred_df, use_container_width=True)
-else:
-    st.info("No tokens starred yet. Scroll down and star them to track here.")
-
-# Ranked token display
-st.subheader("📊 Market Movers")
+# Handle all star/unstar actions before displaying
 for _, row in filtered_df.iterrows():
-    col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
-    with col1:
-        st.write(f"**{row['name']} ({row['symbol'].upper()})**")
-    with col2:
-        st.write(f"💵 Price: ${row['current_price']:.4f}")
-    with col3:
-        st.write(f"📈 Volume Ratio: {row['volume_ratio']:.2f}")
-    with col4:
+    star_key = row['id'] + "_star"
+    unstar_key = row['id'] + "_unstar"
+
+    if st.session_state.get(star_key):
+        if row['id'] not in st.session_state.starred:
+            st.session_state.starred.append(row['id'])
+        st.session_state[star_key] = False
+
+    if st.session_state.get(unstar_key):
         if row['id'] in st.session_state.starred:
-            if st.button(f"Unstar {row['symbol']} ⭐", key=row['id'] + "_unstar"):
-                st.session_state.starred.remove(row['id'])
-        else:
-            if st.button(f"Star {row['symbol']} ☆", key=row['id'] + "_star"):
-                st.session_state.starred.append(row['id'])
+            st.session_state.starred.remove(row['id'])
+        st.session_state[unstar_key] = False
 
-# Deep dive token view
-with st.expander("🔎 Token Deep Dive"):
-    token_choice = st.selectbox("Choose a token:", filtered_df["id"])
-    if token_choice:
-        info_url = f"https://api.coingecko.com/api/v3/coins/{token_choice}"
-        info_data = requests.get(info_url).json()
+# Main UI Tabs
+tab = st.selectbox("Navigate", ["Market Movers", "Watchlist"])
 
-        st.markdown(f"### {info_data['name']} ({info_data['symbol'].upper()})")
-        st.write("💰 **Price:** $", info_data['market_data']['current_price']['usd'])
-        st.write("🏦 **Market Cap:** $", info_data['market_data']['market_cap']['usd'])
-        st.write("🔄 **24h Volume:** $", info_data['market_data']['total_volume']['usd'])
-        st.write("📦 **Circulating Supply:**", info_data['market_data']['circulating_supply'])
-        st.write("📦 **Total Supply:**", info_data['market_data']['total_supply'])
+# --- Market Movers View ---
+if tab == "Market Movers":
+    st.markdown("## Market Movers")
+    for _, row in filtered_df.iterrows():
+        with st.container():
+            cols = st.columns([3, 2, 2, 2])
+            with cols[0]:
+                st.markdown(f"**{row['name']} ({row['symbol'].upper()})**")
+            with cols[1]:
+                st.markdown(f"Price: **${row['current_price']:.4f}**")
+            with cols[2]:
+                st.markdown(f"Volume Ratio: {row['volume_ratio']:.2f}")
+            with cols[3]:
+                key = row['id'] + ("_unstar" if row['id'] in st.session_state.starred else "_star")
+                label = "Unstar" if row['id'] in st.session_state.starred else "Star"
+                st.checkbox(label, key=key)
 
-        # Chart
-        chart_df = get_candle_data(token_choice)
-        if not chart_df.empty and 'time' in chart_df.columns and 'price' in chart_df.columns:
-            chart_df = chart_df.rename(columns={'time': 'index'}).set_index('index')
-            st.line_chart(chart_df['price'])
-        else:
-            st.warning("No chart data available.")
+# --- Watchlist View ---
+elif tab == "Watchlist":
+    st.markdown("## Watchlist")
+    starred_df = filtered_df[filtered_df["id"].isin(st.session_state.starred)]
+
+    if not starred_df.empty:
+        for _, row in starred_df.iterrows():
+            with st.container():
+                st.markdown(f"""
+                <div style="padding: 8px 12px; margin-bottom: 10px; background-color: #111111; border-radius: 6px;">
+                    <div style="font-size: 20px; font-weight: bold;">{row['name']} ({row['symbol'].upper()})</div>
+                    <div style="font-size: 16px;">Price: ${row['current_price']:.4f}</div>
+                    <div style="font-size: 16px;">Volume Ratio: {row['volume_ratio']:.2f}</div>
+                </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.info("Your watchlist is currently empty.")

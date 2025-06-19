@@ -1,31 +1,38 @@
 import streamlit as st
-from data_fetch.coins import get_market_movers
-from state.star_state import toggle_watchlist, is_starred
+from data_fetch.coins import get_market_data
+from state.star_state import is_starred
 
-def render_market_movers():
-    st.subheader("📈 Market Movers")
-
-    coins = get_market_movers()
-
-    if not coins:
-        st.warning("Unable to fetch market movers.")
+def render_main_layout(toggle_star, get_starred_tokens):
+    tokens = get_market_data()
+    if not tokens:
+        st.warning("No token data found.")
         return
 
-    for coin in coins:
-        symbol = coin.get("symbol", "").upper()
-        name = coin.get("name", "")
-        price = coin.get("price", 0)
-        volume_ratio = coin.get("volume_change_ratio", "N/A")
+    st.markdown("### Top Market Movers")
+    for token in tokens:
+        token_id = token.get("id", "")
+        name = token.get("name", "N/A")
+        symbol = token.get("symbol", "N/A").upper()
+        price = token.get("current_price", 0.0)
+        volume = token.get("total_volume", 0)
 
-        is_saved = is_starred(symbol)
-        star = "⭐" if is_saved else "☆"
+        # Format values
+        formatted_price = f"${price:,.4f}"
+        formatted_volume = f"{volume:,}"
 
-        cols = st.columns([2, 5, 3, 2, 1])
-        cols[0].markdown(f"**{symbol}**")
-        cols[1].markdown(name)
-        cols[2].markdown(f"${price:,.4f}")
-        cols[3].markdown(f"Vol Ratio: {volume_ratio}")
-        
-        if cols[4].button(star, key=f"star_{symbol}"):
-            toggle_watchlist(symbol)
-            st.experimental_rerun()
+        # Compact row layout
+        cols = st.columns([1.2, 2.5, 2, 2.5, 0.5])
+        with cols[0]:
+            st.write(symbol)
+        with cols[1]:
+            st.markdown(f"**{name}**")
+        with cols[2]:
+            st.write(formatted_price)
+        with cols[3]:
+            st.write(f"Vol: {formatted_volume}")
+        with cols[4]:
+            starred = is_starred(token_id)
+            star_label = "★" if starred else "☆"
+            if st.button(star_label, key=f"star-{token_id}"):
+                toggle_star(token_id)
+                st.rerun()

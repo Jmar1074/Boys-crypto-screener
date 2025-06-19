@@ -1,28 +1,36 @@
-import streamlit as st
+layout.py — Redesigned Market Movers UI Layout
 
-def render_market_movers(filtered_df):
-    st.subheader("📊 Ranked Market Movers")
+import streamlit as st import pandas as pd from state.star_state import toggle_star, is_starred
 
-    for _, row in filtered_df.iterrows():
-        col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+def display_market_movers(df): st.subheader("📈 Market Movers")
 
-        with col1:
-            st.markdown(f"**{row['symbol'].upper()}**  \n{row['name']}")
+if df.empty:
+    st.warning("No data available.")
+    return
 
-        with col2:
-            price = f"${row['current_price']:,.4f}"
-            st.markdown(f"**Price:** {price}")
+# Custom compressed ticker-style layout
+for _, row in df.iterrows():
+    token_id = row['id']
+    symbol = row['symbol'].upper()
+    name = row['name']
+    price = f"${row['current_price']:,.4f}"
+    volume_ratio = f"{row['volume_ratio']:.2f}x"
 
-        with col3:
-            ratio = f"{row['volume_ratio']:.2f}"
-            st.markdown(f"**Volume Ratio:** {ratio}")
+    cols = st.columns([1, 2.5, 2, 2, 0.7])
 
-        with col4:
-            is_starred = row['id'] in st.session_state.starred
-            icon = "★" if is_starred else "☆"
-            btn_label = f"{icon}"
-            if st.button(btn_label, key=f"star-{row['id']}"):
-                if is_starred:
-                    st.session_state.starred.remove(row['id'])
-                else:
-                    st.session_state.starred.append(row['id'])
+    with cols[0]:
+        st.markdown(f"**{symbol}**", unsafe_allow_html=True)
+    with cols[1]:
+        st.markdown(f"<span style='font-weight:600;font-size:16px'>{name}</span>", unsafe_allow_html=True)
+    with cols[2]:
+        st.markdown(f"<span style='font-size:16px'>{price}</span>", unsafe_allow_html=True)
+    with cols[3]:
+        st.markdown(f"<span style='font-size:16px'>{volume_ratio}</span>", unsafe_allow_html=True)
+    with cols[4]:
+        starred = is_starred(token_id)
+        if st.button("★" if starred else "☆", key=f"star_{token_id}"):
+            toggle_star(token_id)
+            st.experimental_rerun()
+
+st.markdown("---")
+

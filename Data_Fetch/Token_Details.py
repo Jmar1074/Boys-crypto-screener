@@ -1,30 +1,23 @@
-import requests
-import pandas as pd
+token_details.py (Fallback-Integrated)
 
-def get_token_details(token_id):
-    url = f"https://api.coingecko.com/api/v3/coins/{token_id}"
-    try:
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()
-        return r.json()
-    except Exception as e:
-        print(f"Error fetching details for {token_id}: {e}")
-        return {}
+import requests from utils.fallback_request import try_sources
 
-def get_token_chart(token_id, days=7):
-    url = f"https://api.coingecko.com/api/v3/coins/{token_id}/market_chart"
-    params = {
-        "vs_currency": "usd",
-        "days": days,
-        "interval": "daily"
+def get_token_details(token_id): urls = [ f"https://api.coingecko.com/api/v3/coins/{token_id}", # Add more fallback endpoints here if needed ]
+
+response = try_sources(urls, method="GET")
+
+if response and response.status_code == 200:
+    data = response.json()
+    market_data = data.get("market_data", {})
+    return {
+        "name": data.get("name"),
+        "symbol": data.get("symbol"),
+        "price": market_data.get("current_price", {}).get("usd"),
+        "market_cap": market_data.get("market_cap", {}).get("usd"),
+        "volume": market_data.get("total_volume", {}).get("usd"),
+        "circulating": market_data.get("circulating_supply"),
+        "total": market_data.get("total_supply"),
+        "id": data.get("id"),
     }
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        r.raise_for_status()
-        prices = r.json().get("prices", [])
-        df = pd.DataFrame(prices, columns=["time", "price"])
-        df["time"] = pd.to_datetime(df["time"], unit="ms")
-        return df
-    except Exception as e:
-        print(f"Error fetching chart for {token_id}: {e}")
-        return pd.DataFrame()
+return None
+

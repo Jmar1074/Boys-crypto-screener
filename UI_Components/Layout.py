@@ -1,36 +1,28 @@
-layout.py — Redesigned Market Movers UI Layout
+import streamlit as st
+from data_fetch.coins import get_token_list
+from state.star_state import is_starred, toggle_star
 
-import streamlit as st import pandas as pd from state.star_state import toggle_star, is_starred
+def show_market_movers():
+    tokens = get_token_list()
 
-def display_market_movers(df): st.subheader("📈 Market Movers")
+    if not tokens:
+        st.warning("⚠️ No market data available.")
+        return
 
-if df.empty:
-    st.warning("No data available.")
-    return
+    for token in tokens:
+        name = token.get('name', '')
+        symbol = token.get('symbol', '')
+        price = token.get('price', 0)
+        volume = token.get('volume', 0)
 
-# Custom compressed ticker-style layout
-for _, row in df.iterrows():
-    token_id = row['id']
-    symbol = row['symbol'].upper()
-    name = row['name']
-    price = f"${row['current_price']:,.4f}"
-    volume_ratio = f"{row['volume_ratio']:.2f}x"
+        is_favorited = is_starred(symbol)
+        star_icon = "★" if is_favorited else "☆"
 
-    cols = st.columns([1, 2.5, 2, 2, 0.7])
-
-    with cols[0]:
-        st.markdown(f"**{symbol}**", unsafe_allow_html=True)
-    with cols[1]:
-        st.markdown(f"<span style='font-weight:600;font-size:16px'>{name}</span>", unsafe_allow_html=True)
-    with cols[2]:
-        st.markdown(f"<span style='font-size:16px'>{price}</span>", unsafe_allow_html=True)
-    with cols[3]:
-        st.markdown(f"<span style='font-size:16px'>{volume_ratio}</span>", unsafe_allow_html=True)
-    with cols[4]:
-        starred = is_starred(token_id)
-        if st.button("★" if starred else "☆", key=f"star_{token_id}"):
-            toggle_star(token_id)
+        cols = st.columns([0.1, 0.4, 0.25, 0.2, 0.05])
+        cols[0].markdown("🔄")  # Placeholder for future logo/symbol
+        cols[1].markdown(f"**{symbol}** — {name}")
+        cols[2].markdown(f"${price:,.4f}")
+        cols[3].markdown(f"Vol: {volume:,.2f}")
+        if cols[4].button(star_icon, key=f"star-{symbol}"):
+            toggle_star(symbol)
             st.experimental_rerun()
-
-st.markdown("---")
-

@@ -1,5 +1,3 @@
-# crypto_screener_app.py (Phase 1.2 Enhanced)
-
 import streamlit as st
 import requests
 import pandas as pd
@@ -13,14 +11,11 @@ nltk.download("vader_lexicon")
 st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")
 st.title("🧠 The Boys Crypto Screener")
 
-# --- SESSION STATE FOR STARS ---
 if "starred" not in st.session_state:
     st.session_state.starred = []
 
-# --- SETTINGS ---
 MIN_MARKET_CAP = 500_000
 
-# --- API CALLS ---
 @st.cache_data(ttl=60)
 def get_top_coins():
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -33,6 +28,7 @@ def get_top_coins():
     }
     r = requests.get(url, params=params)
     return pd.DataFrame(r.json())
+
 @st.cache_data(ttl=600)
 def get_token_reddit_sentiment(name):
     try:
@@ -60,18 +56,15 @@ def get_candle_data(symbol="bitcoin"):
         return df
     return pd.DataFrame()
 
-# --- SCREENING FUNCTION ---
 def screen_coins(df):
     df = df[df["market_cap"] >= MIN_MARKET_CAP]
     df["volume_ratio"] = df["total_volume"] / (df["market_cap"] / 100)
     df = df.sort_values("market_cap", ascending=False)
     return df[["id", "symbol", "name", "current_price", "market_cap", "total_volume", "volume_ratio"]]
 
-# --- MAIN ---
 df_coins = get_top_coins()
 filtered_df = screen_coins(df_coins)
 
-# --- STARRED TOKENS ---
 st.subheader("🚀 Watchlist: Starred Tokens")
 if st.session_state.starred:
     starred_df = filtered_df[filtered_df["id"].isin(st.session_state.starred)]
@@ -79,7 +72,6 @@ if st.session_state.starred:
 else:
     st.info("No tokens starred yet. Scroll below and ⭐ to track them here.")
 
-# --- ALL TOKENS ---
 st.subheader("📊 Ranked Market Movers")
 for _, row in filtered_df.iterrows():
     col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
@@ -97,7 +89,6 @@ for _, row in filtered_df.iterrows():
             if st.button(f"Star {row['symbol']} ☆", key=row['id']+"_star"):
                 st.session_state.starred.append(row['id'])
 
-# --- DETAILED VIEW ---
 with st.expander("🔎 Token Deep Dive"):
     token_choice = st.selectbox("Choose a token:", filtered_df["id"])
     if token_choice:
@@ -111,13 +102,11 @@ with st.expander("🔎 Token Deep Dive"):
         st.write("📦 **Circulating Supply:**", info_data['market_data']['circulating_supply'])
         st.write("📦 **Total Supply:**", info_data['market_data']['total_supply'])
 
-        # Sentiment analysis
         sentiment_score, comments = get_token_reddit_sentiment(info_data['name'])
         st.write(f"💬 **Reddit Sentiment Score:** {sentiment_score}")
         for c in comments:
             st.caption(f"🗣️ {c[:100]}...")
 
-        # Chart
         chart_df = get_candle_data(token_choice)
         if not chart_df.empty:
             fig = go.Figure()

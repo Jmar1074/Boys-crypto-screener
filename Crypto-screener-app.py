@@ -4,7 +4,8 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime
-from vadersentiment.vadersentiment import SentimentIntensityAnalyzer
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.graph_objects as go
 
 st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")

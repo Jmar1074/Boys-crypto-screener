@@ -1,20 +1,24 @@
 import streamlit as st
-from ui_components.layout import render_market_movers
-from ui_components.watchlist_view import render_watchlist
-from state.star_state import sync_starred_tokens
-from data_fetch.coingecko_api import get_filtered_tokens
+import threading
 
-st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")
+from ui_components.layout import show_market_movers
+from ui_components.watchlist_view import show_watchlist
+from utils.background_refresh import start_refresh_loop
+from state.star_state import init_star_state
 
-# Sync toggle logic for starred tokens
-filtered_df = get_filtered_tokens()
-sync_starred_tokens(filtered_df)
+if 'page' not in st.session_state:
+    st.session_state.page = 'Market Movers'
+init_star_state()
 
-# Navigation
-tab = st.selectbox("Navigate", ["Market Movers", "Watchlist"])
+st.sidebar.title("📊 The Boys Crypto Screener")
+page_choice = st.sidebar.radio("Navigate to:", ["Market Movers", "Watchlist"])
+st.session_state.page = page_choice
 
-if tab == "Market Movers":
-    render_market_movers(filtered_df)
+if 'refresh_thread_started' not in st.session_state:
+    threading.Thread(target=start_refresh_loop, daemon=True).start()
+    st.session_state.refresh_thread_started = True
 
-elif tab == "Watchlist":
-    render_watchlist(filtered_df)
+if st.session_state.page == 'Market Movers':
+    show_market_movers()
+elif st.session_state.page == 'Watchlist':
+    show_watchlist()

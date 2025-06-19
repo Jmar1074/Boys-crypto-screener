@@ -1,36 +1,47 @@
-utils/fallback_request.py
-
 import requests
 
-def try_sources(sources, params=None, headers=None, timeout=5): """ Attempt to fetch data from multiple sources in order. Returns the first valid JSON response.
+def try_sources(token_id, fallback=False):
+    """
+    Attempts to fetch token metadata from a fallback source if primary fails.
+    Currently uses CoinPaprika as secondary.
+    """
 
-Args:
-    sources (list): List of full URLs (strings).
-    params (dict): Optional URL parameters.
-    headers (dict): Optional headers.
-    timeout (int): Timeout in seconds for each request.
+    if not fallback:
+        return None
 
-Returns:
-    dict or None: Parsed JSON if any request is successful, else None.
-"""
-for url in sources:
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=timeout)
-        if response.ok:
-            return response.json()
-    except Exception as e:
-        continue
-return None
+        url = f"https://api.coinpaprika.com/v1/coins/{token_id}"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
 
-Example usage in another script:
+        return {
+            "name": data.get("name", ""),
+            "symbol": data.get("symbol", "").upper(),
+            "description": data.get("description", "No description available."),
+            "market_cap": None,
+            "circulating_supply": None,
+            "total_supply": None,
+            "max_supply": None,
+            "ath": None,
+            "atl": None,
+            "homepage": data.get("links", {}).get("website", [""])[0] if isinstance(data.get("links", {}).get("website"), list) else "",
+            "categories": [],
+            "image": "",  # Could be populated via scraped source
+        }
 
-from utils.fallback_request import try_sources
-
-data = try_sources([
-
-"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd",
-
-"https://api.coinpaprika.com/v1/tickers"
-
-])
-
+    except Exception:
+        return {
+            "name": token_id.capitalize(),
+            "symbol": token_id.upper(),
+            "description": "No description available.",
+            "market_cap": None,
+            "circulating_supply": None,
+            "total_supply": None,
+            "max_supply": None,
+            "ath": None,
+            "atl": None,
+            "homepage": "",
+            "categories": [],
+            "image": "",
+        }

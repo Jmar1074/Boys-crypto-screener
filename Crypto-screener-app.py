@@ -8,6 +8,8 @@ import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.graph_objects as go
 
+nltk.download("vader_lexicon")
+
 st.set_page_config(page_title="The Boys Crypto Screener", layout="wide")
 st.title("🧠 The Boys Crypto Screener")
 

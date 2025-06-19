@@ -1,28 +1,31 @@
 import streamlit as st
-from data_fetch.coins import get_token_list
-from state.star_state import is_starred, toggle_star
+from data_fetch.coins import get_market_movers
+from state.star_state import toggle_watchlist, is_starred
 
-def show_market_movers():
-    tokens = get_token_list()
+def render_market_movers():
+    st.subheader("📈 Market Movers")
 
-    if not tokens:
-        st.warning("⚠️ No market data available.")
+    coins = get_market_movers()
+
+    if not coins:
+        st.warning("Unable to fetch market movers.")
         return
 
-    for token in tokens:
-        name = token.get('name', '')
-        symbol = token.get('symbol', '')
-        price = token.get('price', 0)
-        volume = token.get('volume', 0)
+    for coin in coins:
+        symbol = coin.get("symbol", "").upper()
+        name = coin.get("name", "")
+        price = coin.get("price", 0)
+        volume_ratio = coin.get("volume_change_ratio", "N/A")
 
-        is_favorited = is_starred(symbol)
-        star_icon = "★" if is_favorited else "☆"
+        is_saved = is_starred(symbol)
+        star = "⭐" if is_saved else "☆"
 
-        cols = st.columns([0.1, 0.4, 0.25, 0.2, 0.05])
-        cols[0].markdown("🔄")  # Placeholder for future logo/symbol
-        cols[1].markdown(f"**{symbol}** — {name}")
+        cols = st.columns([2, 5, 3, 2, 1])
+        cols[0].markdown(f"**{symbol}**")
+        cols[1].markdown(name)
         cols[2].markdown(f"${price:,.4f}")
-        cols[3].markdown(f"Vol: {volume:,.2f}")
-        if cols[4].button(star_icon, key=f"star-{symbol}"):
-            toggle_star(symbol)
+        cols[3].markdown(f"Vol Ratio: {volume_ratio}")
+        
+        if cols[4].button(star, key=f"star_{symbol}"):
+            toggle_watchlist(symbol)
             st.experimental_rerun()

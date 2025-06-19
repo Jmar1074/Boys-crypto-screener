@@ -1,36 +1,27 @@
-token_deep_dive.py — Refactored with Fallback Support
+token_deep_dive.py — Finalized with Structured Deep Dive
 
-from utils.fallback_request import try_sources
+from data_fetch.token_details import get_token_details from data_fetch.sentiment import get_token_sentiment from utils.fallback_request import try_sources
 
-def fetch_token_deep_dive(token_id): """ Pull detailed token metrics (supply, all-time high, ROI stats). """ url_sources = [ f"https://api.coingecko.com/api/v3/coins/{token_id}", f"https://coins.llama.fi/prices/current/coingecko:{token_id}" ]
+def deep_dive_data(token_id): """ Combines token detail retrieval and sentiment analysis. Falls back to secondary data if needed. """ data_sources = [ lambda: get_token_details(token_id), lambda: try_sources([ f"https://api.coingecko.com/api/v3/coins/{token_id}", f"https://coins.llama.fi/prices/current/coingecko:{token_id}" ]) ]
 
-data = try_sources(url_sources)
-if not data:
+token_data = None
+for fetch in data_sources:
+    try:
+        data = fetch()
+        if data:
+            token_data = data
+            break
+    except Exception:
+        continue
+
+if not token_data:
     return None
 
-if 'market_data' in data:
-    market = data['market_data']
-    return {
-        "price": market['current_price']['usd'],
-        "market_cap": market['market_cap']['usd'],
-        "volume_24h": market['total_volume']['usd'],
-        "circulating_supply": market['circulating_supply'],
-        "total_supply": market['total_supply'],
-        "ath": market['ath']['usd'],
-        "ath_date": market['ath_date']['usd'],
-    }
+sentiment_score, comments = get_token_sentiment(token_id)
 
-elif 'coins' in data and f"coingecko:{token_id}" in data['coins']:
-    token_data = data['coins'][f"coingecko:{token_id}"]
-    return {
-        "price": token_data.get("price"),
-        "market_cap": token_data.get("marketCap"),
-        "volume_24h": token_data.get("volume"),
-        "circulating_supply": token_data.get("circulatingSupply"),
-        "total_supply": token_data.get("totalSupply"),
-        "ath": token_data.get("ath"),
-        "ath_date": token_data.get("athDate"),
-    }
-
-return None
+return {
+    "details": token_data,
+    "sentiment_score": sentiment_score,
+    "sample_comments": comments or []
+}
 

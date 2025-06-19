@@ -39,7 +39,12 @@ def screen_coins(df):
 
 # --- MAIN ---
 df_coins = get_top_coins()
+st.write("🔍 Raw CoinGecko Data (first 5 rows):")
+st.write(df_coins.head())  # Debug: verify data loading
+
 filtered_df = screen_coins(df_coins)
+st.write("✅ Filtered Results (first 5 rows):")
+st.write(filtered_df.head())  # Debug: check filtering
 
 # --- STAR FEATURE ---
 st.subheader("⭐ Starred Tokens")

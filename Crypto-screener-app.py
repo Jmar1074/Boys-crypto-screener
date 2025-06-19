@@ -88,5 +88,5 @@ with st.expander("🔎 Token Deep Dive"):
             chart_df = chart_df.rename(columns={'time': 'index'}).set_index('index')
 st.line_chart(chart_df['price'])
 
-        else:
+       else:
             st.warning("No chart data available.")

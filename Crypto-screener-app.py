@@ -85,9 +85,8 @@ with st.expander("🔎 Token Deep Dive"):
 
         chart_df = get_candle_data(token_choice)
         if not chart_df.empty:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=chart_df['time'], y=chart_df['price'], mode='lines+markers', name='Price'))
-            fig.update_layout(title='📉 7-Day Price Trend', xaxis_title='Date', yaxis_title='USD')
-            st.plotly_chart(fig, use_container_width=True)
+            chart_df = chart_df.rename(columns={'time': 'index'}).set_index('index')
+st.line_chart(chart_df['price'])
+
         else:
             st.warning("No chart data available.")

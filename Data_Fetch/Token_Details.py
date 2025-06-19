@@ -1,10 +1,8 @@
 import requests
-from utils.fallback_request import try_sources
 
 def get_token_details(token_id):
     """
-    Retrieves detailed information for a given token from CoinGecko.
-    Falls back to alternative sources if needed.
+    Fetches token metadata from primary provider (CoinGecko by default).
     """
     try:
         url = f"https://api.coingecko.com/api/v3/coins/{token_id}"
@@ -12,18 +10,33 @@ def get_token_details(token_id):
         response.raise_for_status()
         data = response.json()
 
-        # Extracted core details
         return {
-            "name": data.get("name"),
-            "symbol": data.get("symbol"),
-            "price": data.get("market_data", {}).get("current_price", {}).get("usd"),
-            "market_cap": data.get("market_data", {}).get("market_cap", {}).get("usd"),
-            "volume": data.get("market_data", {}).get("total_volume", {}).get("usd"),
-            "change_24h": data.get("market_data", {}).get("price_change_percentage_24h"),
-            "homepage": data.get("links", {}).get("homepage", [None])[0],
-            "image": data.get("image", {}).get("large"),
-            "description": data.get("description", {}).get("en", "")[:500]  # Trimmed for UI readability
+            "name": data.get("name", ""),
+            "symbol": data.get("symbol", "").upper(),
+            "description": data.get("description", {}).get("en", ""),
+            "market_cap": data.get("market_data", {}).get("market_cap", {}).get("usd", 0),
+            "circulating_supply": data.get("market_data", {}).get("circulating_supply", 0),
+            "total_supply": data.get("market_data", {}).get("total_supply", 0),
+            "max_supply": data.get("market_data", {}).get("max_supply", 0),
+            "ath": data.get("market_data", {}).get("ath", {}).get("usd", 0),
+            "atl": data.get("market_data", {}).get("atl", {}).get("usd", 0),
+            "homepage": data.get("links", {}).get("homepage", [""])[0],
+            "categories": data.get("categories", []),
+            "image": data.get("image", {}).get("thumb", ""),
         }
+
     except Exception:
-        # Fallback if primary fetch fails
-        return try_sources(token_id, fallback=True)
+        return {
+            "name": token_id.capitalize(),
+            "symbol": token_id.upper(),
+            "description": "No description available.",
+            "market_cap": None,
+            "circulating_supply": None,
+            "total_supply": None,
+            "max_supply": None,
+            "ath": None,
+            "atl": None,
+            "homepage": "",
+            "categories": [],
+            "image": "",
+        }

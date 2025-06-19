@@ -30,15 +30,15 @@ def get_top_coins():
     }
     r = requests.get(url, params=params)
     return pd.DataFrame(r.json())
-
 @st.cache_data(ttl=600)
 def get_token_reddit_sentiment(name):
     try:
         r = requests.get(f"https://api.pushshift.io/reddit/search/comment/?q={name}&size=20")
         if r.status_code == 200:
             comments = [i['body'] for i in r.json().get('data', [])]
-            sentiment = [TextBlob(text).sentiment.polarity for text in comments]
-            avg_sentiment = round(sum(sentiment) / len(sentiment), 3) if sentiment else 0
+            analyzer = SentimentIntensityAnalyzer()
+            scores = [analyzer.polarity_scores(text)["compound"] for text in comments]
+            avg_sentiment = round(sum(scores) / len(scores), 3) if scores else 0
             return avg_sentiment, comments[:3]
     except:
         return 0, []

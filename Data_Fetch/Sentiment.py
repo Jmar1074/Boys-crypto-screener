@@ -1,22 +1,22 @@
-# sentiment.py (Fallback-Integrated)
-
 import requests
-from textblob import TextBlob
 from utils.fallback_request import try_sources
 
-def get_token_sentiment(token_name):
-    query = token_name.lower()
-    urls = [
-        f"https://api.pushshift.io/reddit/search/comment/?q={query}&size=20",
-        # Add future fallback URLs here
-    ]
-    response = try_sources(urls, method="GET")
+def get_token_sentiment(token_id):
+    """
+    Pulls real-time sentiment score and comments from primary API,
+    falls back to mock structure or alternative later-enabled source.
+    """
+    try:
+        url = f"https://cryptosentimentapi.com/api/sentiment/{token_id}"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        result = response.json()
 
-    if response and response.status_code == 200:
-        data = response.json().get("data", [])
-        comments = [i.get("body", "") for i in data]
-        sentiments = [TextBlob(text).sentiment.polarity for text in comments if text]
-        average = round(sum(sentiments) / len(sentiments), 3) if sentiments else 0
-        return average, comments[:3]
+        sentiment_score = result.get("score", None)
+        comments = result.get("comments", [])
+        return sentiment_score, comments
 
-    return 0, []
+    except Exception:
+        # Optional fallback using try_sources() in future integration
+        fallback_data = try_sources(token_id, sentiment=True)
+        return fallback_data.get("score", None), fallback_data.get("comments", [])

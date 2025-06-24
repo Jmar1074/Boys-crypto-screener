@@ -1,20 +1,28 @@
-import streamlit as st
+import json
+import os
 
-def _init_star_state():
-    if "starred_tokens" not in st.session_state:
-        st.session_state["starred_tokens"] = set()
+STARRED_FILE = "state/starred_tokens.json"
 
-def get_starred():
-    _init_star_state()
-    return st.session_state["starred_tokens"]
+def load_starred_tokens():
+    if os.path.exists(STARRED_FILE):
+        with open(STARRED_FILE, "r") as f:
+            return json.load(f)
+    return []
 
-def is_starred(token_id):
-    _init_star_state()
-    return token_id in st.session_state["starred_tokens"]
+def save_starred_tokens(tokens):
+    with open(STARRED_FILE, "w") as f:
+        json.dump(tokens, f)
 
 def toggle_star(token_id):
-    _init_star_state()
-    if token_id in st.session_state["starred_tokens"]:
-        st.session_state["starred_tokens"].remove(token_id)
+    tokens = load_starred_tokens()
+    if token_id in tokens:
+        tokens.remove(token_id)
     else:
-        st.session_state["starred_tokens"].add(token_id)
+        tokens.append(token_id)
+    save_starred_tokens(tokens)
+
+def is_starred(token_id):
+    return token_id in load_starred_tokens()
+
+def get_starred_tokens():
+    return load_starred_tokens()

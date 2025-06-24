@@ -1,26 +1,17 @@
 import streamlit as st
-import json
-import os
-from utils.render_helpers import render_token_row
+from utils.render_helpers import render_star_icon
 
-WATCHLIST_FILE = "assets/watchlist.json"
 
-def load_watchlist():
-    if not os.path.exists(WATCHLIST_FILE):
-        return []
-    with open(WATCHLIST_FILE, "r") as f:
-        return json.load(f)
+def render_watchlist(watchlist_data):
+    st.subheader("📌 Your Watchlist")
 
-def save_watchlist(watchlist):
-    with open(WATCHLIST_FILE, "w") as f:
-        json.dump(watchlist, f)
-
-def render_watchlist():
-    st.header("⭐ Your Watchlist")
-    watchlist = load_watchlist()
-    if not watchlist:
-        st.info("You haven't added any tokens to your watchlist yet.")
+    if not watchlist_data:
+        st.info("Your watchlist is currently empty.")
         return
 
-    for token in watchlist:
-        render_token_row(token, is_watchlist=True)
+    for token in watchlist_data:
+        col1, col2 = st.columns([9, 1])
+        with col1:
+            st.write(f"**{token['name']}** — ${token['price']:,}")
+        with col2:
+            render_star_icon(token['symbol'], active=True)

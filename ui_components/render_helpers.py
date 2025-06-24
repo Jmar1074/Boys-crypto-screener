@@ -1,7 +1,5 @@
 import streamlit as st
 
-def render_divider():
+def render_section_header(title):
+    st.markdown(f"## {title}")
     st.markdown("---")
-
-def render_section_title(title):
-    st.subheader(title)

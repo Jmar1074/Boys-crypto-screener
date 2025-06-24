@@ -1,14 +1,15 @@
-import time
-import streamlit as st
+import threading, time
+from data_fetch.coins import fetch_market_movers
 
-def auto_refresh(interval_sec=60):
-    """Triggers Streamlit rerun after specified interval."""
-    placeholder = st.empty()
-    countdown = interval_sec
+def _refresh_loop(interval, callback):
+    while True:
+        time.sleep(interval)
+        callback()
 
-    while countdown:
-        placeholder.text(f"Auto-refresh in {countdown} sec...")
-        time.sleep(1)
-        countdown -= 1
-
-    st.rerun()
+def background_token_refresher(interval=60):
+    t = threading.Thread(
+        target=_refresh_loop,
+        args=(interval, fetch_market_movers),
+        daemon=True
+    )
+    t.start()

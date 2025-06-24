@@ -1,23 +1,32 @@
 import streamlit as st
-from data_fetch.coins import get_token_by_id
-from state.star_state import get_starred_tokens
-from ui_components.render_helpers import render_divider, render_section_title
-from utils.token_lookup import get_token_by_id
+import pandas as pd
+from state.star_state import toggle_star, is_starred
+from utils.render_helpers import render_section_header
 
 
-def render_watchlist_view():
-    watchlist = get_starred_tokens()
-    if not watchlist:
+def display_watchlist(watchlist_data):
+    """Render the user's starred token watchlist."""
+    render_section_header("⭐ Starred Watchlist")
+
+    if not watchlist_data:
+        st.info("No tokens have been starred yet.")
         return
 
-    render_divider()
-    render_section_title("⭐ Watchlist")
+    # Format the data into a DataFrame
+    df = pd.DataFrame(watchlist_data)
 
-    for token_id in watchlist:
-        token = get_token_by_id(token_id)
-        if token:
-            cols = st.columns([2, 5, 3, 2])
-            cols[0].write(token.get("symbol", "").upper())
-            cols[1].markdown(f"**{token.get('name', 'N/A')}**")
-            cols[2].write(f"${token.get('price', 0):,.4f}")
-            cols[3].write(f"{token.get('volume_ratio', 0):.2f}x")
+    # Display as table with watch/unwatch actions
+    for _, row in df.iterrows():
+        cols = st.columns([3, 2, 2, 1])
+        token_name = f"**{row['name']} ({row['symbol']})**"
+        price = f"${row['price']:,.4f}"
+        volume_ratio = f"{row['volume_ratio']:.2f}"
+
+        cols[0].markdown(token_name)
+        cols[1].markdown(price)
+        cols[2].markdown(volume_ratio)
+
+        # Star toggle
+        starred = is_starred(row["symbol"])
+        if cols[3].button("★" if starred else "☆", key=f"star-{row['symbol']}"):
+            toggle_star(row["symbol"])

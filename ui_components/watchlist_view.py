@@ -2,6 +2,7 @@ import streamlit as st
 from data_fetch.coins import get_token_by_id
 from state.star_state import get_starred_tokens
 from ui_components.render_helpers import render_divider, render_section_title
+from utils.token_lookup import get_token_by_id
 
 
 def render_watchlist_view():

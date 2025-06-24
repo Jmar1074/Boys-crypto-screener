@@ -1,17 +1,14 @@
 import streamlit as st
-from utils.render_helpers import render_star_icon
+from ui_components.watchlist import get_watchlist_tokens
+from data_fetch.token_details import get_token_details
+from utils.render_helpers import render_token_row
 
-
-def render_watchlist(watchlist_data):
-    st.subheader("📌 Your Watchlist")
-
-    if not watchlist_data:
-        st.info("Your watchlist is currently empty.")
+def render_watchlist_view(starred_tokens, toggle_star_fn):
+    token_ids = get_watchlist_tokens()
+    if not token_ids:
+        st.info("Your watchlist is empty.")
         return
 
-    for token in watchlist_data:
-        col1, col2 = st.columns([9, 1])
-        with col1:
-            st.write(f"**{token['name']}** — ${token['price']:,}")
-        with col2:
-            render_star_icon(token['symbol'], active=True)
+    for tid in token_ids:
+        details = get_token_details(tid)
+        render_token_row(details, tid in starred_tokens, toggle_star_fn)

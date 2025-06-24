@@ -1,20 +1,26 @@
 import streamlit as st
-from ui_components.render_helpers import render_token_row
-from utils.watchlist import load_watchlist
-from data_fetch.token_details import get_token_details
+import json
+import os
+from utils.render_helpers import render_token_row
 
-def render_watchlist_view():
-    st.header("★ Watchlist")
+WATCHLIST_FILE = "assets/watchlist.json"
 
+def load_watchlist():
+    if not os.path.exists(WATCHLIST_FILE):
+        return []
+    with open(WATCHLIST_FILE, "r") as f:
+        return json.load(f)
+
+def save_watchlist(watchlist):
+    with open(WATCHLIST_FILE, "w") as f:
+        json.dump(watchlist, f)
+
+def render_watchlist():
+    st.header("⭐ Your Watchlist")
     watchlist = load_watchlist()
     if not watchlist:
-        st.info("Your watchlist is empty.")
+        st.info("You haven't added any tokens to your watchlist yet.")
         return
 
-    for token_id in watchlist:
-        try:
-            details = get_token_details(token_id)
-            if details:
-                render_token_row(details)
-        except Exception as e:
-            st.error(f"Error loading {token_id}: {str(e)}")
+    for token in watchlist:
+        render_token_row(token, is_watchlist=True)

@@ -1,5 +1,0 @@
-pip
-install
-streamlit
-requests
-pandas

@@ -1,16 +1,25 @@
-import streamlit as st
+import json
+import os
 
-def render_watchlist_section(starred_tokens, on_star_toggle):
-    st.subheader("⭐ Your Watchlist")
-    if not starred_tokens:
-        st.info("No tokens starred yet. Use the ★ icon to add.")
-        return
+WATCHLIST_FILE = "watchlist.json"
 
-    for token in starred_tokens:
-        col1, col2 = st.columns([8, 1])
-        with col1:
-            st.write(f"{token['name']} ({token['symbol']}) - ${token['price']:,.2f}")
-        with col2:
-            star = "★"
-            if st.button(star, key=f"remove_star_{token['id']}"):
-                on_star_toggle(token['id'])
+def load_watchlist():
+    if not os.path.exists(WATCHLIST_FILE):
+        return []
+    with open(WATCHLIST_FILE, "r") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+def save_watchlist(watchlist):
+    with open(WATCHLIST_FILE, "w") as f:
+        json.dump(watchlist, f, indent=2)
+
+def toggle_watchlist(token_id):
+    watchlist = load_watchlist()
+    if token_id in watchlist:
+        watchlist.remove(token_id)
+    else:
+        watchlist.append(token_id)
+    save_watchlist(watchlist)

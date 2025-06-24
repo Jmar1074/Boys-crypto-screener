@@ -1,22 +1,30 @@
 import streamlit as st
-from state.star_state import is_starred, toggle_star
+from utils.is_starred import is_starred
+from utils.render_helpers import render_star_icon
 
-def render_market_movers_view(market_movers, starred_tokens, toggle_star):
-    st.subheader("📈 Market Movers")
-    for token in market_movers:
-        symbol = token.get("symbol", "").upper()
+def render_market_movers_view(movers, starred_tokens, toggle_star_fn):
+    # Header row
+    headers = ["★", "Symbol", "Name", "Price", "VR"]
+    cols = st.columns([1, 2, 2, 2, 1])
+    for col, h in zip(cols, headers):
+        with col:
+            st.write(f"**{h}**")
+
+    # Data rows
+    for token in movers:
+        symbol = token["symbol"]
         name = token.get("name", "")
         price = token.get("price", 0)
-        volume_ratio = token.get("volume_ratio", 0)
-
-        is_favorite = is_starred(symbol, starred_tokens)
-        star_icon = "⭐" if is_favorite else "☆"
+        vr = token.get("volume_ratio", 0)
 
         cols = st.columns([1, 2, 2, 2, 1])
-        cols[0].markdown(f"**{symbol}**")
-        cols[1].markdown(f"**{name}**")
-        cols[2].markdown(f"${price:,.2f}")
-        cols[3].markdown(f"{volume_ratio:.2f}x")
-        if cols[4].button(star_icon, key=f"star-{symbol}"):
-            toggle_star(symbol)
-        st.markdown("---")
+        with cols[0]:
+            render_star_icon(symbol, is_starred(symbol, starred_tokens), toggle_star_fn)
+        with cols[1]:
+            st.write(symbol)
+        with cols[2]:
+            st.write(name)
+        with cols[3]:
+            st.write(f"${price:,.2f}")
+        with cols[4]:
+            st.write(f"{vr:.2f}")

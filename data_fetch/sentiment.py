@@ -1,17 +1,13 @@
-
-import requests
 from utils.fallback_request import try_sources
 
 def get_token_sentiment(token_id):
     try:
-        url = f"https://api.coingecko.com/api/v3/coins/{token_id}"
-        response = requests.get(url)
-        data = response.json()
-
-        sentiment_score = data.get("sentiment_votes_up_percentage", 0)
-        comments = data.get("description", {}).get("en", "").split(". ")[:3]
-
-        return sentiment_score, comments
-
+        sentiment_data = try_sources(token_id, sentiment=True)
+        if sentiment_data:
+            score = sentiment_data.get("sentiment_score", 0)
+            comments = sentiment_data.get("sample_comments", [])
+            return score, comments
     except Exception:
-        return 0, ["Sentiment data unavailable."]
+        pass
+
+    return 0, []

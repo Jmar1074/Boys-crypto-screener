@@ -8,14 +8,17 @@ def deep_dive_data(token_id):
         lambda: try_sources(token_id, fallback=True)
     ]
 
+    data = None
     for fetcher in data_sources:
         try:
-            data = fetcher()
-            if data:
+            result = fetcher()
+            if result:
+                data = result
                 break
         except Exception:
             continue
-    else:
+
+    if not data:
         return None
 
     sentiment_score, comments = get_token_sentiment(token_id)

@@ -1,7 +1,8 @@
-from utils.fallback_request import try_sources
+import requests
+
+API_BASE = "https://api.example.com/coins"
 
 def get_token_details(token_id):
-    try:
-        return try_sources(token_id, fallback=True)
-    except Exception:
-        return {}
+    resp = requests.get(f"{API_BASE}/{token_id}")
+    resp.raise_for_status()
+    return resp.json()

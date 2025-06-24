@@ -1,8 +1,7 @@
-from data_fetch.token_details import get_token_details
-from utils.fallback_request import try_sources
+from data_fetch.coins import get_all_tokens
 
-def lookup_token(token_id):
-    data = get_token_details(token_id)
-    if not data:
-        data = try_sources(token_id, fallback=True)
-    return data
+def get_token_by_id(token_id):
+    for t in get_all_tokens():
+        if t.get("id") == token_id:
+            return t
+    return None

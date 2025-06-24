@@ -1,21 +1,21 @@
 import streamlit as st
-from ui_components.market_movers_view import render_market_movers_view
-from ui_components.watchlist_view import render_watchlist_view
-from data_fetch.token_details import get_token_details
+from ui_components.watchlist_view import render_watchlist_section
+from ui_components.token_overview import render_token_overview
+from ui_components.sentiment_section import render_sentiment_section
+from state.star_state import get_watchlist_tokens
 
-def render_main_layout(market_movers, starred_tokens, toggle_star):
-    col1, col2 = st.columns([2, 1])
+def render_main_layout():
+    tabs = st.tabs(["🔥 Market Movers", "⭐ Watchlist", "📈 Sentiment Analysis"])
 
-    token_details = {}
-    for token in market_movers:
-        token_id = token.get("id")
-        if token_id:
-            details = get_token_details(token_id)
-            if details:
-                token_details[token_id] = details
+    with tabs[0]:
+        render_token_overview()
 
-    with col1:
-        render_market_movers_view(market_movers, token_details, toggle_star)
+    with tabs[1]:
+        watchlist = get_watchlist_tokens()
+        if not watchlist:
+            st.info("No tokens in your watchlist yet. Click the star ⭐ to add some.")
+        else:
+            render_watchlist_section(watchlist)
 
-    with col2:
-        render_watchlist_view(starred_tokens, toggle_star)
+    with tabs[2]:
+        render_sentiment_section()

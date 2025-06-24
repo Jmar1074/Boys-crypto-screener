@@ -1,27 +1,39 @@
 import requests
+import streamlit as st
 
-API_BASE_URL = "https://api.coingecko.com/api/v3"
-
+@st.cache_data(ttl=300)
 def fetch_market_movers():
-    url = f"{API_BASE_URL}/coins/markets"
-    params = {
-        "vs_currency": "usd",
-        "order": "volume_desc",
-        "per_page": 10,
-        "page": 1,
-        "sparkline": False
-    }
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
+    try:
+        url = "https://api.coingecko.com/api/v3/search/trending"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("coins", [])
+    except Exception as e:
+        st.error(f"Error fetching market movers: {e}")
+        return []
 
+@st.cache_data(ttl=300)
 def get_top_movers():
-    data = fetch_market_movers()
-    return sorted(data, key=lambda x: x["price_change_percentage_24h"] or 0, reverse=True)[:10]
+    return fetch_market_movers()
 
+@st.cache_data(ttl=300)
 def get_token_by_id(token_id):
-    url = f"{API_BASE_URL}/coins/{token_id}"
-    response = requests.get(url)
-    if response.status_code == 200:
+    try:
+        url = f"https://api.coingecko.com/api/v3/coins/{token_id}"
+        response = requests.get(url)
+        response.raise_for_status()
         return response.json()
-    return None
+    except Exception:
+        return None
+
+@st.cache_data(ttl=600)
+def get_all_tokens():
+    try:
+        url = "https://api.coingecko.com/api/v3/coins/list"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()  # list of token dictionaries with id, name, symbol
+    except Exception as e:
+        st.error(f"Error fetching all tokens: {e}")
+        return []

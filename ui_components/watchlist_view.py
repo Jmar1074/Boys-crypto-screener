@@ -1,15 +1,18 @@
 import streamlit as st
-from state.star_state import load_starred_tokens
-from utils.render_helpers import render_section_title
+from render_helpers import render_token_row
+from data_fetch.token_details import get_token_details
+from data_fetch.sentiment import get_token_sentiment
 
+def render_watchlist_section(watchlist):
+    st.subheader("Your Watchlist")
 
-def render_watchlist_view():
-    render_section_title("★ Starred Tokens")
-    starred_tokens = load_starred_tokens()
+    for token_id in watchlist:
+        token_details = get_token_details(token_id)
+        sentiment_score, _ = get_token_sentiment(token_id)
 
-    if not starred_tokens:
-        st.write("No tokens starred yet.")
-        return
-
-    for token in starred_tokens:
-        st.markdown(f"- **{token}**")
+        if token_details:
+            render_token_row(
+                token=token_details,
+                is_starred=True,
+                sentiment_score=sentiment_score
+            )
